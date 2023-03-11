@@ -2,7 +2,6 @@
 pragma solidity ^0.8.9;
 
 import "./aave-contracts/interfaces/IFlashLoanSimpleReceiver.sol";
-import "hardhat/console.sol";
 
 interface IERC20{
     function balanceOf(address account) external view returns (uint256);
@@ -46,8 +45,7 @@ contract Broker is IFlashLoanSimpleReceiver {
     bytes calldata params
   ) external returns (bool){
     uint256 balance = IERC20(asset).balanceOf(address(this));
-    console.log("chamou aqui");
-    console.log(balance);
+
     // do the logic
   }
 
