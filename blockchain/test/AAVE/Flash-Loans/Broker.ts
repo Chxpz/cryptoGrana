@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { assert, expect } from "chai";
 import { utils, Contract } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 require("chai").use(require("chai-as-promised")).should();
 
 

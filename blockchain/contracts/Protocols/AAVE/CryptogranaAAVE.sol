@@ -1,7 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-contract CryptogranaAAVE {
+
+interface IWETH {
+    function deposit() external payable;
+
+    function withdraw(uint256 wad) external;
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function approve(address guy, uint256 wad) external returns (bool);
+
+    function balanceOf(address owner) external view returns (uint256 balance);
+
+     function transferFrom(address src, address dst, uint wad)
+        external
+        returns (bool);
+}
+
+contract CryptogranaAAVEAdapter {
     error FailToAddSupply(bytes message);
     error FailToWithdraw(bytes message);
 
@@ -9,9 +26,14 @@ contract CryptogranaAAVE {
         address pool,
         address asset,
         uint256 amount,
-        address onBehalfOf,
         uint16 referralCode
     ) external {
+        address onBehalfOf = address(this);
+
+        IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).transferFrom(msg.sender, address(this), amount);
+       
+        setApproval(asset,pool, amount);
+
         bytes memory data = abi.encodeWithSignature(
             "supply(address,uint256,address,uint16)",
             asset,
@@ -24,6 +46,10 @@ contract CryptogranaAAVE {
         if (!ok) {
             revert FailToAddSupply(returnData);
         }
+    }
+
+    function setApproval(address token,address pool, uint256 amount) private {
+        IWETH(token).approve(pool, amount);
     }
 
     function supplyTokensWithPermit(
@@ -148,7 +174,10 @@ contract CryptogranaAAVE {
     }
 
     function repayTokensWithATokens(
-        address pool, address asset,uint256 amount,uint256 interestRateMode
+        address pool,
+        address asset,
+        uint256 amount,
+        uint256 interestRateMode
     ) external {
         bytes memory data = abi.encodeWithSignature(
             "repayWithATokens(address,uint256,uint256)",
@@ -163,9 +192,12 @@ contract CryptogranaAAVE {
         }
     }
 
-    function swapBorrowRateMode(address pool, address asset, uint256 interestRateMode) external {
-    
-    bytes memory data = abi.encodeWithSignature(
+    function swapBorrowRateMode(
+        address pool,
+        address asset,
+        uint256 interestRateMode
+    ) external {
+        bytes memory data = abi.encodeWithSignature(
             "swapBorrowRateMode(address,uint256)",
             asset,
             interestRateMode
@@ -177,7 +209,11 @@ contract CryptogranaAAVE {
         }
     }
 
-    function rebalanceStableBorrowRate(address pool, address asset, address user) external {
+    function rebalanceStableBorrowRate(
+        address pool,
+        address asset,
+        address user
+    ) external {
         bytes memory data = abi.encodeWithSignature(
             "rebalanceStableBorrowRate(address,address)",
             asset,
@@ -190,9 +226,11 @@ contract CryptogranaAAVE {
         }
     }
 
-    function setUserUseReserveAsCollateral(address pool, address asset, bool useAsCollateral)
-        external
-    {
+    function setUserUseReserveAsCollateral(
+        address pool,
+        address asset,
+        bool useAsCollateral
+    ) external {
         bytes memory data = abi.encodeWithSignature(
             "setUserUseReserveAsCollateral(address,bool)",
             asset,
@@ -205,8 +243,7 @@ contract CryptogranaAAVE {
         }
     }
 
-   function mintToTreasury(address pool, address[] calldata assets) external {
-
+    function mintToTreasury(address pool, address[] calldata assets) external {
         bytes memory data = abi.encodeWithSignature(
             "mintToTreasury(address[])",
             assets
@@ -215,7 +252,6 @@ contract CryptogranaAAVE {
         (bool ok, bytes memory returnData) = pool.call(data);
         if (!ok) {
             revert FailToWithdraw(returnData);
-        } 
-   }
-
+        }
+    }
 }
