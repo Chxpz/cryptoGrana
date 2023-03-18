@@ -24,7 +24,7 @@ const config: HardhatUserConfig = {
     hardhat: 
     {
       forking:{
-      url: "https://eth-mainnet.g.alchemy.com/v2/3gdK4NWm1_d8epP07VBl6cjUN6XveEbf",
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       }
     },
   },

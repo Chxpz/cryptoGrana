@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-
-interface IWETH {
+interface IERC20 {
     function deposit() external payable;
 
     function withdraw(uint256 wad) external;
@@ -13,14 +12,18 @@ interface IWETH {
 
     function balanceOf(address owner) external view returns (uint256 balance);
 
-     function transferFrom(address src, address dst, uint wad)
-        external
-        returns (bool);
+    function transferFrom(
+        address src,
+        address dst,
+        uint wad
+    ) external returns (bool);
 }
 
 contract CryptogranaAAVEAdapter {
     error FailToAddSupply(bytes message);
     error FailToWithdraw(bytes message);
+
+    mapping(address => uint256) public aaveTokenToWeth;
 
     function supplyTokens(
         address pool,
@@ -30,9 +33,13 @@ contract CryptogranaAAVEAdapter {
     ) external {
         address onBehalfOf = address(this);
 
-        IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).transferFrom(msg.sender, address(this), amount);
-       
-        setApproval(asset,pool, amount);
+        IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        setApproval(asset, pool, amount);
 
         bytes memory data = abi.encodeWithSignature(
             "supply(address,uint256,address,uint16)",
@@ -46,10 +53,16 @@ contract CryptogranaAAVEAdapter {
         if (!ok) {
             revert FailToAddSupply(returnData);
         }
+
+        uint256 aaveTokenBalance = IERC20(
+            0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8
+        ).balanceOf(address(this));
+
+        aaveTokenToWeth[msg.sender] += aaveTokenBalance;
     }
 
-    function setApproval(address token,address pool, uint256 amount) private {
-        IWETH(token).approve(pool, amount);
+    function setApproval(address token, address pool, uint256 amount) private {
+        IERC20(token).approve(pool, amount);
     }
 
     function supplyTokensWithPermit(

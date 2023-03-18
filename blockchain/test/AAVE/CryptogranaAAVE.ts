@@ -51,5 +51,8 @@ describe("Cryptograna AAVE Adapter", function () {
     const supplyBalance = await aTokenWeth.balanceOf(cryptograna.address);
     
     expect(amountToSupply.toString()).to.eq(supplyBalance.toString());  
+   
+    expect((await cryptograna.aaveTokenToWeth(user.address)).toString()).to.eq(supplyBalance.toString());
+   
   });
 });
