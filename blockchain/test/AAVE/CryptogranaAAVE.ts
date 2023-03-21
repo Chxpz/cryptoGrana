@@ -3,7 +3,7 @@ import { assert, expect } from "chai";
 import { utils, Contract, BigNumberish } from "ethers";
 import { ethers, network } from "hardhat";
 import { getAtokenWeth, getCryptograna, getWeth } from "./helpers/setUp";
-import { depositERC20 } from "./helpers/wethHelper";
+import { approveERC20, depositERC20 } from "./helpers/wethHelper";
 require("chai").use(require("chai-as-promised")).should();
 
 
@@ -37,15 +37,19 @@ describe("Cryptograna AAVE Adapter", function () {
 
   it("Should supply tokens on AAVE", async () => {
 
-    depositERC20({
+    await depositERC20({
       ERC20Token: weth.address,
       amount: amount,
       signer: user
     })
 
-    weth.connect(user).deposit({ value: amount });
+    await approveERC20({
+      ERC20Token: weth.address,
+      amount: amount,
+      signer: user,
+      spender: cryptograna.address
+    })
 
-    await weth.connect(user).approve(cryptograna.address, amount);
 
     await cryptograna.connect(user).supplyTokens(
       pool,
