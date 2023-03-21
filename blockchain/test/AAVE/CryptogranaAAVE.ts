@@ -2,9 +2,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { assert, expect } from "chai";
 import { utils, Contract, BigNumberish } from "ethers";
 import { ethers, network } from "hardhat";
-import { supplyTokens } from "./helpers/AAVEAdapterFunc";
-import { getAtokenWeth, getCryptograna, getWeth } from "./helpers/setUp";
-import { approveERC20, depositERC20 } from "./helpers/wethHelper";
+import { supplyTokens } from "../helpers/AAVEAdapterFunc";
+import { getAtokenWeth, getCryptograna, getWeth } from "../helpers/setUp";
+import { approveERC20, depositERC20 } from "../helpers/wethHelper";
 require("chai").use(require("chai-as-promised")).should();
 
 
