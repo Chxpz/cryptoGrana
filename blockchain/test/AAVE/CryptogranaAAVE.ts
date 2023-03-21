@@ -1,8 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { assert, expect } from "chai";
-import { utils, Contract } from "ethers";
+import { utils, Contract, BigNumberish } from "ethers";
 import { ethers, network } from "hardhat";
 import { getAtokenWeth, getCryptograna, getWeth } from "./helpers/setUp";
+import { depositERC20 } from "./helpers/wethHelper";
 require("chai").use(require("chai-as-promised")).should();
 
 
@@ -17,6 +18,7 @@ describe("Cryptograna AAVE Adapter", function () {
   let pool: string
   let weth: Contract
   let aTokenWeth: Contract
+  let amount: BigNumberish;
 
   this.beforeAll(async () => {
     cryptograna = await getCryptograna();
@@ -29,26 +31,32 @@ describe("Cryptograna AAVE Adapter", function () {
 
     [owner, user] = await ethers.getSigners();
 
+    amount = ethers.utils.parseEther("100");
+
   })
 
   it("Should supply tokens on AAVE", async () => {
 
-    const amountToSupply = ethers.utils.parseEther("100");
+    depositERC20({
+      ERC20Token: weth.address,
+      amount: amount,
+      signer: user
+    })
 
-    weth.connect(user).deposit({ value: amountToSupply });
+    weth.connect(user).deposit({ value: amount });
 
-    await weth.connect(user).approve(cryptograna.address, amountToSupply);
+    await weth.connect(user).approve(cryptograna.address, amount);
 
     await cryptograna.connect(user).supplyTokens(
       pool,
       "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-      amountToSupply,
+      amount,
       0
     )
 
     const supplyBalance = await aTokenWeth.balanceOf(cryptograna.address);
 
-    expect(amountToSupply.toString()).to.eq(supplyBalance.toString());
+    expect(amount.toString()).to.eq(supplyBalance.toString());
 
     expect((await cryptograna.aaveTokenToWeth(user.address)).toString()).to.eq(supplyBalance.toString());
 
