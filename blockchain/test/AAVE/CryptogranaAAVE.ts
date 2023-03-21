@@ -2,6 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { assert, expect } from "chai";
 import { utils, Contract, BigNumberish } from "ethers";
 import { ethers, network } from "hardhat";
+import { supplyTokens } from "./helpers/AAVEAdapterFunc";
 import { getAtokenWeth, getCryptograna, getWeth } from "./helpers/setUp";
 import { approveERC20, depositERC20 } from "./helpers/wethHelper";
 require("chai").use(require("chai-as-promised")).should();
@@ -50,13 +51,14 @@ describe("Cryptograna AAVE Adapter", function () {
       spender: cryptograna.address
     })
 
-
-    await cryptograna.connect(user).supplyTokens(
-      pool,
-      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-      amount,
-      0
-    )
+    await supplyTokens({
+      contract: cryptograna,
+      signer: user,
+      pool: pool,
+      token: weth.address,
+      amount: amount,
+      referralCode: 0
+    })
 
     const supplyBalance = await aTokenWeth.balanceOf(cryptograna.address);
 
