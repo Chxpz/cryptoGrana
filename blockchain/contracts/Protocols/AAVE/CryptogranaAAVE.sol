@@ -1,27 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-interface IERC20 {
-    function deposit() external payable;
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-    function withdraw(uint256 wad) external;
+import "hardhat/console.sol";
 
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function approve(address guy, uint256 wad) external returns (bool);
-
-    function balanceOf(address owner) external view returns (uint256 balance);
-
-    function transferFrom(
-        address src,
-        address dst,
-        uint wad
-    ) external returns (bool);
+interface IAAVE {
+    function borrow(
+        address asset,
+        uint256 amount,
+        uint256 interestRateMode,
+        uint16 referralCode,
+        address onBehalfOf
+    ) external;
 }
 
 contract CryptogranaAAVEAdapter {
     error FailToAddSupply(bytes message);
     error FailToWithdraw(bytes message);
+    error FailToBorrow(string message);
+    error AssetOutOfBorrowCap();
 
     mapping(address => uint256) public aaveTokenToWeth;
 
@@ -33,11 +31,7 @@ contract CryptogranaAAVEAdapter {
     ) external {
         address onBehalfOf = address(this);
 
-        IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
+        IERC20(asset).transferFrom(msg.sender, address(this), amount);
 
         setApproval(asset, pool, amount);
 
@@ -114,6 +108,7 @@ contract CryptogranaAAVEAdapter {
     }
 
     function borrowTokens(
+        address poolDataProvider,
         address pool,
         address asset,
         uint256 amount,
@@ -121,19 +116,51 @@ contract CryptogranaAAVEAdapter {
         uint16 referralCode,
         address onBehalfOf
     ) external {
-        bytes memory data = abi.encodeWithSignature(
-            "borrow(address,uint256,uint256,uint16,address)",
-            asset,
-            amount,
-            interestRateMode,
-            referralCode,
-            onBehalfOf
+        (, bytes memory data) = address(poolDataProvider).call(
+            abi.encodeWithSignature(
+                "getReserveCaps(address)",
+                asset
+            )
         );
 
-        (bool ok, bytes memory returnData) = pool.call(data);
-        if (!ok) {
-            revert FailToWithdraw(returnData);
+       (uint256 borrowCap, ) =  abi.decode(data, (uint256, uint256));
+
+       if(borrowCap < amount) {
+           revert AssetOutOfBorrowCap();
         }
+
+        try
+            IAAVE(pool).borrow(
+                asset,
+                amount,
+                interestRateMode,
+                referralCode,
+                onBehalfOf
+            )
+        {
+            // success
+        } catch Error(string memory reason) {
+            revert FailToBorrow(reason);
+        } catch {
+            revert FailToBorrow("Unknown error");
+        }
+
+        //repayTokens(pool, asset, balance, interestRateMode, onBehalfOf);
+
+        // bytes memory data = abi.encodeWithSignature(
+        //     "borrow(address,uint256,uint256,uint16,address)",
+        //     asset,
+        //     amount,
+        //     interestRateMode,
+        //     referralCode,
+        //     onBehalfOf
+        // );
+
+        // (bool ok, bytes memory returnData) = pool.call(data);
+        // if (!ok) {
+        //     string memory errorMessage = abi.decode(returnData, (string));
+        //     revert FailToBorrow(errorMessage);
+        // }
     }
 
     function repayTokens(
@@ -142,7 +169,7 @@ contract CryptogranaAAVEAdapter {
         uint256 amount,
         uint256 rateMode,
         address onBehalfOf
-    ) external {
+    ) public {
         bytes memory data = abi.encodeWithSignature(
             "repay(address,uint256,uint256,address)",
             asset,

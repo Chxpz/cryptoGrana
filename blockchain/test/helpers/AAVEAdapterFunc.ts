@@ -11,6 +11,18 @@ interface SupplyTokensParams {
     referralCode: BigNumberish;
 }
 
+interface BorrowTokensParams{
+    contract: Contract;
+    signer: SignerWithAddress;
+    pooldataProvider: string;
+    pool: string;
+    token: string;
+    amount: BigNumberish;
+    interestRateMode: BigNumberish;
+    referralCode: BigNumberish;
+    onBehalfOf: string;
+}
+
 export async function supplyTokens({
     contract,
     signer,
@@ -26,6 +38,35 @@ export async function supplyTokens({
                 token,
                 amount,
                 referralCode
+            )
+            resolve(tx);
+        } catch (error) {
+            reject(error);
+        }
+    })
+}
+
+export async function borrowTokens({
+    contract,
+    signer,
+    pooldataProvider,
+    pool,
+    token,
+    amount,
+    interestRateMode,
+    referralCode,
+    onBehalfOf
+}: BorrowTokensParams): Promise<providers.TransactionResponse> {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const tx = await contract.connect(signer).borrowTokens(
+                pooldataProvider,
+                pool,
+                token,
+                amount,
+                interestRateMode,
+                referralCode,
+                onBehalfOf
             )
             resolve(tx);
         } catch (error) {
